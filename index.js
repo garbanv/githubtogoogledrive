@@ -37,8 +37,8 @@ const __dirname = path.dirname(__filename);
 
 /* SET HOUR TO RUN FUNCTION */
 const rule = new schedule.RecurrenceRule();
-rule.hour=22
-rule.minute =59;
+rule.hour=6
+rule.minute =5;
 
 
 /* REPEATED FUNCTION */
