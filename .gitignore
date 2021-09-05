@@ -1,0 +1,25 @@
+node_modules/
+jspm_packages/
+log/
+.env
+
+# node-waf configuration
+.lock-wscript
+
+# Optional npm cache directory
+
+# dotenv environment variable files
+.env*
+.env.development
+.env.production
+
+.zip*
+.jpg*
+
+# gatsby files
+.cache/
+public
+
+# Mac files
+.DS_Store
+.npm
