@@ -1,30 +1,116 @@
-import fetch from 'node-fetch';
-
-import fs from 'fs'
+import dotenv from 'dotenv'
+dotenv.config()
+import  { google }  from 'googleapis';
+import schedule from 'node-schedule'
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Octokit } from "@octokit/rest";
-const octokit = new Octokit({ auth: `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` });
 
 
 
+
+/* GET DATE */
+const d = new Date();
+const date = d.toLocaleDateString();
+const file=`${date.toString()}-coronavirus-master.zip`;
 const owner ="nychealth"
 const repo="coronavirus-data"
 const ref="master"
 
-const test = await octokit.rest.repos.downloadZipballArchive({
+
+/* SET HOUR TO RUN FUNCTION */
+const rule = new schedule.RecurrenceRule();
+rule.hour=19
+rule.minute = 26;
+
+
+/* REPEATED FUNCTION */
+const job = schedule.scheduleJob(rule, async function(){
+  const octokit = new Octokit();
+  /* GET REPO DATA */  
+  const repoData = await octokit.rest.repos.downloadZipballArchive({
     owner,
     repo,
     ref,
   });
 
+/* CONVERT DATA TO FILE */
+const buffer = await Buffer.from(repoData.data);
 
-const buffer = await Buffer.from(test.data);
-
-const data = await fs.writeFileSync('myfile.zip', buffer, function (err) {
+const data = await fs.writeFileSync(`coronavirus-master.zip`, buffer, function (err) {
   if (err) throw err;
   console.log('Saved!');
 });
+
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/* CONNECT GOOGLE API */
+
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+
+const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+
+const oauth2Client = new google.auth.OAuth2(
+  CLIENT_ID,
+  CLIENT_SECRET,
+  REDIRECT_URI
+);
+
+oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+
+
+const drive = google.drive({
+  version: 'v3',
+  auth: oauth2Client,
+});
+
+
+const filePath = path.join(__dirname, 'coronavirus-master.zip');
+const folder=process.env.FOLDER
+
+
+async function uploadFile() {
+    var folderId = folder;
+    var fileMetadata = {
+      'name': file,
+      parents: [folderId]
+    };
+    var media = {
+      mimeType: 'file/zip',
+      body: fs.createReadStream(filePath)
+    };
+    drive.files.create({
+      resource: fileMetadata,
+      media: media,
+      fields: 'id'
+    }, function (err, file) {
+      if (err) {
+        // Handle error
+        console.error(err);
+      } else {
+        console.log('File Id: ', file.data.id);
+      }
+    });
+}
+
+if(data===undefined){
+
+uploadFile();
+}
+ 
+});
+
+
   
-console.log("data",data);
+
+
+
 
 
 

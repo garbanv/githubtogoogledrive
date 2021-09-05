@@ -1,3 +1,7 @@
+import express from 'express'
+const app = express()
+const port = process.env.PORT || 3000;
+app.use(express.static('static'));
 import dotenv from 'dotenv'
 dotenv.config()
 import  { google }  from 'googleapis';
@@ -10,6 +14,15 @@ import { Octokit } from "@octokit/rest";
 
 
 
+app.listen(port,()=>{
+  console.log("app running on port: "+port)
+})
+
+
+
+app.get("/",(req,res)=>{res.send("Github")})
+
+
 /* GET DATE */
 const d = new Date();
 const date = d.toLocaleDateString();
@@ -19,15 +32,19 @@ const repo="coronavirus-data"
 const ref="master"
 
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /* SET HOUR TO RUN FUNCTION */
 const rule = new schedule.RecurrenceRule();
-rule.hour=14
-rule.minute = 45;
+rule.hour=20
+rule.minute = 50;
 
 
 /* REPEATED FUNCTION */
 const job = schedule.scheduleJob(rule, async function(){
-  const octokit = new Octokit();
+const octokit = new Octokit();
+
   /* GET REPO DATA */  
   const repoData = await octokit.rest.repos.downloadZipballArchive({
     owner,
@@ -38,15 +55,14 @@ const job = schedule.scheduleJob(rule, async function(){
 /* CONVERT DATA TO FILE */
 const buffer = await Buffer.from(repoData.data);
 
-const data = await fs.writeFileSync(`coronavirus-master.zip`, buffer, function (err) {
+const data = await fs.writeFileSync(path.join(__dirname,"static","coronavirus-master.zip"), buffer, function (err) {
   if (err) throw err;
   console.log('Saved!');
 });
 
 
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+
 
 /* CONNECT GOOGLE API */
 
