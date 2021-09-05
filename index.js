@@ -22,7 +22,7 @@ const ref="master"
 /* SET HOUR TO RUN FUNCTION */
 const rule = new schedule.RecurrenceRule();
 rule.hour=14
-rule.minute = 11;
+rule.minute = 45;
 
 
 /* REPEATED FUNCTION */
