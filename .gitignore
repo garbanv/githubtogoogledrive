@@ -14,7 +14,7 @@ log/
 .env.production
 
 .zip*
-.jpg*
+.jpg
 
 # gatsby files
 .cache/

@@ -25,9 +25,7 @@ rule.hour=19
 rule.minute = 26;
 
 
-/* REPEATED FUNCTION */
-const job = schedule.scheduleJob(rule, async function(){
-  const octokit = new Octokit();
+const octokit = new Octokit();
   /* GET REPO DATA */  
   const repoData = await octokit.rest.repos.downloadZipballArchive({
     owner,
@@ -103,8 +101,6 @@ if(data===undefined){
 
 uploadFile();
 }
- 
-});
 
 
   
