@@ -20,7 +20,7 @@ app.listen(port,()=>{
 
 
 
-app.get("/",(req,res)=>{res.send("Github")})
+app.get("/",(req,res)=>{res.send("A github repository will be saved as zip file on a google drive folder every day at 7pm")})
 
 
 /* GET DATE */
@@ -37,8 +37,8 @@ const __dirname = path.dirname(__filename);
 
 /* SET HOUR TO RUN FUNCTION */
 const rule = new schedule.RecurrenceRule();
-rule.hour=12
-rule.minute =0;
+rule.hour=20
+rule.minute =59;
 
 
 /* REPEATED FUNCTION */
