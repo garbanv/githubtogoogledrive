@@ -1,18 +1,80 @@
+import express from 'express'
+const app = express()
+const port = process.env.PORT || 3000;
+app.use(express.static('static'));
+import dotenv from 'dotenv'
+dotenv.config()
 import  { google }  from 'googleapis';
-
+import schedule from 'node-schedule'
 import fs from 'fs';
-
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Octokit } from "@octokit/rest";
+
+
+
+
+app.listen(port,()=>{
+  console.log("app running on port: "+port)
+})
+
+
+
+app.get("/",(req,res)=>{res.send("A github repository will be saved as zip file on a google drive folder every day at 7pm")})
+
+
+/* GET DATE */
+const d = new Date();
+const date = d.toLocaleDateString();
+const file=`${date.toString()}-coronavirus-master.zip`;
+const owner ="nychealth"
+const repo="coronavirus-data"
+const ref="master"
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/* SET HOUR TO RUN FUNCTION */
+const rule = new schedule.RecurrenceRule();
+rule.hour=16
+rule.minute =50;
 
-const CLIENT_ID = '347429567884-0s07gp77akraracmk3ngs70iq0igvp3r.apps.googleusercontent.com';
-const CLIENT_SECRET = 'MVbA14VYBILpU28xpVA8kHkq';
-const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
 
-const REFRESH_TOKEN = '1//04NpFvC5wTiGOCgYIARAAGAQSNwF-L9IrQ-86S0THs-3yXG-pQXRO8XyTRaehM-cCh0SI7LJT4gLz4MIWAmNS_TbrCEayQrj2-5c';
+/* REPEATED FUNCTION */
+
+const octokit = new Octokit();
+
+  /* GET REPO DATA */  
+  const repoData = await octokit.rest.repos.downloadZipballArchive({
+    owner,
+    repo,
+    ref,
+  });
+
+/* CONVERT DATA TO FILE */
+const buffer = await Buffer.from(repoData.data);
+
+const data = await fs.writeFileSync(path.join(__dirname,"public","coronavirus-master.zip"), buffer, function (err) {
+
+  if (err) throw err;
+  if(undefined){
+    console.log('Saved!');
+  }
+  
+});
+
+
+
+
+
+/* CONNECT GOOGLE API */
+
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URI = process.env.REDIRECT_URI;
+
+const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 
 const oauth2Client = new google.auth.OAuth2(
   CLIENT_ID,
@@ -22,76 +84,45 @@ const oauth2Client = new google.auth.OAuth2(
 
 oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
+
 const drive = google.drive({
   version: 'v3',
   auth: oauth2Client,
 });
 
-/* 
-filepath which needs to be uploaded
-Note: Assumes example.jpg file is in root directory, 
-though this can be any filePath
-*/
-const filePath = path.join(__dirname, 'foto.jpg');
-const folder="15ONd_1kHogVi-_gglw2sxZcbCOVVjuLJ"
+
+const filePath = path.join(__dirname,'coronavirus-master.zip');
+const folder=process.env.FOLDER
+
 
 async function uploadFile() {
-  try {
-    const response = await drive.files.create({
-      requestBody: {
-        name: 'myfile.zip', //This can be name of your choice
-        mimeType: 'image/jpg',
-      },
-      media: {
-        mimeType: 'image/jpg',
-        body: fs.createReadStream(filePath),
-      },
+    var folderId = folder;
+    var fileMetadata = {
+      'name': file,
+      parents: [folderId]
+    };
+    var media = {
+      mimeType: 'file/zip',
+      body: fs.createReadStream(filePath)
+    };
+    drive.files.create({
+      resource: fileMetadata,
+      media: media,
+      fields: 'id'
+    }, function (err, file) {
+      if (err) {
+        // Handle error
+        console.error(err);
+      } else {
+        console.log('File Id: ', file.data.id);
+      }
     });
-
-    console.log(response.data);
-  } catch (error) {
-    console.log("error.message",error.message);
-  }
 }
 
+if(data===undefined){
+
 uploadFile();
-
-/* async function deleteFile() {
-  try {
-    const response = await drive.files.delete({
-      fileId: 'YOUR FILE ID',
-    });
-    console.log(response.data, response.status);
-  } catch (error) {
-    console.log(error.message);
-  }
-} */
-
-// deleteFile();
-
-/* async function generatePublicUrl() {
-  try {
-    const fileId = 'YOUR FILE ID';
-    await drive.permissions.create({
-      fileId: fileId,
-      requestBody: {
-        role: 'reader',
-        type: 'anyone',
-      },
-    }); */
-
-    /* 
-    webViewLink: View the file in browser
-    webContentLink: Direct download link 
-    */
-  /*  QUITAR DESDE AQUI const result = await drive.files.get({
-      fileId: fileId,
-      fields: 'webViewLink, webContentLink',
-    });
-    console.log(result.data);
-  } catch (error) {
-    console.log(error.message);
-  } */
-/* } */
-
-// generatePublicUrl();
+} else {
+  console.log("no data")
+}
+ 
